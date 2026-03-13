@@ -1,0 +1,165 @@
+{
+  "tools": [
+    {
+      "name": "list_tasks",
+      "description": "List all tasks from task registry.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "create_task",
+      "description": "Create a task card.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "summary": { "type": "string" },
+          "parentTaskId": { "type": "string" },
+          "assignedAgent": { "type": "string" },
+          "visibility": { "type": "string", "enum": ["private", "parent", "shared"] },
+          "inputRefs": { "type": "array", "items": { "type": "string" } },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "resultSummary": { "type": "string" }
+        },
+        "required": ["title"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_task",
+      "description": "Get one task and its latest linked artifact.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "taskId": { "type": "string" }
+        },
+        "required": ["taskId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "update_task",
+      "description": "Update task fields and status.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "taskId": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "running", "completed", "failed"] },
+          "summary": { "type": "string" },
+          "resultSummary": { "type": "string" },
+          "detailRef": { "type": "string" },
+          "assignedAgent": { "type": "string" },
+          "claimedBy": { "type": "string" },
+          "claimedAt": { "type": "string" },
+          "leaseExpiresAt": { "type": "string" },
+          "visibility": { "type": "string", "enum": ["private", "parent", "shared"] },
+          "inputRefs": { "type": "array", "items": { "type": "string" } },
+          "outputRefs": { "type": "array", "items": { "type": "string" } },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["taskId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "save_artifact",
+      "description": "Save detailed content for a task.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "taskId": { "type": "string" },
+          "content": { "type": "string" },
+          "type": { "type": "string", "enum": ["note", "plan", "analysis", "log", "code", "result", "test"] },
+          "summary": { "type": "string" },
+          "sourceAgent": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["taskId", "content"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "list_task_events",
+      "description": "List task events.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "taskId": { "type": "string" }
+        },
+        "required": ["taskId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "append_task_event",
+      "description": "Append one task event manually.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "taskId": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": [
+              "task_created",
+              "task_updated",
+              "task_completed",
+              "task_failed",
+              "artifact_saved",
+              "context_read",
+              "task_claimed",
+              "task_released"
+            ]
+          },
+          "actor": { "type": "string" },
+          "message": { "type": "string" },
+          "metadata": { "type": "object" }
+        },
+        "required": ["taskId", "type", "message"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_task_context",
+      "description": "Get actor-scoped context bundle for a task.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "taskId": { "type": "string" },
+          "actor": { "type": "string" }
+        },
+        "required": ["taskId"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "claim_task",
+      "description": "Claim task ownership with a lease.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "taskId": { "type": "string" },
+          "actor": { "type": "string" },
+          "leaseSeconds": { "type": "number" }
+        },
+        "required": ["taskId", "actor"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "release_task",
+      "description": "Release task ownership.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "taskId": { "type": "string" },
+          "actor": { "type": "string" }
+        },
+        "required": ["taskId"],
+        "additionalProperties": false
+      }
+    }
+  ]
+}
