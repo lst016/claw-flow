@@ -1,60 +1,64 @@
-import type { ContextBundle, TaskEvent, TaskRecord, TaskStatus } from "@/lib/types/task";
+import type { TaskEvent, TaskRecord, TaskStatus } from "@/lib/types/task";
+import { formatDateTime } from "@/lib/utils/date";
+import { TaskTimeline } from "./task-timeline";
 
 const text = {
-  title: "\u4efb\u52a1\u8be6\u60c5",
-  description: "\u67e5\u770b\u8bb0\u5f55\u3001\u4e8b\u4ef6\u548c\u4e0a\u4e0b\u6587\u8fb9\u754c\u3002",
-  idle: "\u7a7a\u95f2",
-  selectFirst: "\u8bf7\u5148\u4ece\u67e5\u8be2\u8868\u4e2d\u9009\u62e9\u4e00\u6761\u4efb\u52a1\u8bb0\u5f55\u3002",
-  loading: "\u6b63\u5728\u52a0\u8f7d\u9009\u4e2d\u7684\u8bb0\u5f55...",
-  primary: "\u4e3b\u952e\u4fe1\u606f",
-  visibility: "\u53ef\u89c1\u6027",
-  owner: "\u9886\u53d6\u8005",
-  unclaimed: "\u672a\u9886\u53d6",
-  lease: "\u79df\u7ea6\u5230\u671f",
-  none: "\u65e0",
-  expiresAt: "\u8fc7\u671f\u65f6\u95f4",
-  claim: "\u9886\u53d6\u4efb\u52a1",
-  release: "\u91ca\u653e\u4efb\u52a1",
-  taskTitle: "\u4efb\u52a1\u6807\u9898",
-  taskStatus: "\u4efb\u52a1\u72b6\u6001",
-  summary: "\u6458\u8981\u5feb\u7167",
-  context: "\u4e0a\u4e0b\u6587\u6a21\u62df",
-  actor: "\u6a21\u62df\u8bfb\u53d6\u7684 Agent",
-  access: "\u8bbf\u95ee\u7ea7\u522b",
-  mode: "\u5efa\u8bae\u6a21\u5f0f",
-  contextSummary: "\u4e0a\u4e0b\u6587\u6458\u8981",
-  suggestedRefs: "\u5efa\u8bae\u4f18\u5148\u8bfb\u53d6\u7684\u5f15\u7528",
-  summaryOnly: "\u5f53\u524d actor \u53ea\u80fd\u8bfb\u53d6\u6458\u8981\u3002",
-  ioRefs: "\u8f93\u5165 / \u8f93\u51fa\u5f15\u7528",
-  inputRefs: "\u5141\u8bb8\u8bfb\u53d6\u7684\u8f93\u5165\u5f15\u7528",
-  noInputRefs: "\u6682\u65e0\u8f93\u5165\u5f15\u7528",
-  outputRefs: "\u5f53\u524d\u8f93\u51fa\u5f15\u7528",
-  noOutputRefs: "\u6682\u65e0\u8f93\u51fa\u5f15\u7528",
-  children: "\u5b50\u4efb\u52a1",
-  noChildren: "\u5f53\u524d\u4efb\u52a1\u8fd8\u6ca1\u6709\u5b50\u4efb\u52a1\u3002",
-  recentEvents: "\u6700\u8fd1\u4e8b\u4ef6",
-  noEvents: "\u6682\u65e0\u4e8b\u4ef6\u8bb0\u5f55",
-  readableArtifacts: "\u53ef\u8bfb\u53d6\u7684 Artifact",
-  unknownSource: "\u672a\u77e5\u6765\u6e90",
-  noReadableArtifacts: "\u5f53\u524d actor \u6ca1\u6709\u62ff\u5230\u8be6\u7ec6 Artifact\uff0c\u53ea\u80fd\u4f9d\u8d56\u6458\u8981\u7ee7\u7eed\u5de5\u4f5c\u3002",
-  payload: "\u8be6\u7ec6\u5185\u5bb9\u8f7d\u8377",
-  payloadPlaceholder: "\u5b8c\u6574\u6267\u884c\u7ec6\u8282\u3001\u65e5\u5fd7\u3001\u4ee3\u7801\u6539\u52a8\u6458\u8981\u6216\u5206\u6790\u5185\u5bb9\u3002",
-  saving: "\u63d0\u4ea4\u4e2d...",
-  save: "\u4fdd\u5b58\u8bb0\u5f55",
-  noSummary: "\u6682\u65e0\u6458\u8981\u3002",
-  unassigned: "\u672a\u5206\u914d",
-  full: "\u5b8c\u6574\u8bbf\u95ee",
-  summaryOnlyLabel: "\u4ec5\u6458\u8981",
-  private: "\u79c1\u6709",
-  parent: "\u7236\u4efb\u52a1\u53ef\u89c1",
-  shared: "\u5171\u4eab",
+  title: "任务详情",
+  description: "查看记录、事件和上下文边界。",
+  idle: "空闲",
+  selectFirst: "请先从查询表中选择一条任务记录。",
+  loading: "正在加载选中的记录...",
+  primary: "主键信息",
+  visibility: "可见性",
+  owner: "领取者",
+  unclaimed: "未领取",
+  lease: "租约到期",
+  none: "无",
+  expiresAt: "过期时间",
+  claim: "领取任务",
+  deleteTask: "彻底删除",
+  taskTitle: "任务标题",
+  taskStatus: "任务状态",
+  summary: "摘要快照",
+  context: "上下文模拟",
+  actor: "模拟读取的 Agent",
+  access: "访问级别",
+  mode: "建议模式",
+  contextSummary: "上下文摘要",
+  suggestedRefs: "建议优先读取的引用",
+  summaryOnly: "当前 actor 只能读取摘要。",
+  ioRefs: "输入 / 输出引用",
+  inputRefs: "允许读取的输入引用",
+  noInputRefs: "暂无输入引用",
+  outputRefs: "当前输出引用",
+  noOutputRefs: "暂无输出引用",
+  parentTask: "父任务",
+  noParentTask: "当前任务是根任务。",
+  children: "子任务",
+  noChildren: "当前任务还没有子任务。",
+  recentEvents: "最近事件",
+  noEvents: "暂无事件记录",
+  readableArtifacts: "可读取的 Artifact",
+  unknownSource: "未知来源",
+  noReadableArtifacts: "当前 actor 没有拿到详细 Artifact，只能依靠摘要继续工作。",
+  payload: "详细内容载荷",
+  payloadPlaceholder: "完整执行细节、日志、代码改动摘要或分析内容。",
+  saving: "提交中...",
+  save: "保存记录",
+  noSummary: "暂无摘要。",
+  unassigned: "未分配",
+  full: "完整访问",
+  summaryOnlyLabel: "仅摘要",
+  private: "私有",
+  parent: "父任务可见",
+  shared: "共享",
 } as const;
 
 const statusLabels: Record<TaskStatus, string> = {
-  pending: "\u5f85\u5904\u7406",
-  running: "\u6267\u884c\u4e2d",
-  completed: "\u5df2\u5b8c\u6210",
-  failed: "\u5931\u8d25",
+  pending: "待处理",
+  running: "执行中",
+  completed: "已完成",
+  failed: "失败",
 };
 
 const visibilityLabels = {
@@ -63,13 +67,9 @@ const visibilityLabels = {
   shared: text.shared,
 } as const;
 
-const accessLabels = {
-  full: text.full,
-  summary_only: text.summaryOnlyLabel,
-} as const;
-
 type TaskDetailProps = {
   task: TaskRecord | null;
+  parentTask: TaskRecord | null;
   childTasks: TaskRecord[];
   artifact: string;
   artifactLoading: boolean;
@@ -77,19 +77,21 @@ type TaskDetailProps = {
   statusDraft: TaskStatus;
   summaryDraft: string;
   events: TaskEvent[];
-  contextBundle: ContextBundle | null;
-  simulatedActor: string;
-  onSimulatedActorChange: (value: string) => void;
+  onSelectParentTask: (taskId: string) => void;
+  onSelectChildTask: (taskId: string) => void;
   onClaim: () => void;
-  onRelease: () => void;
+  onDelete: () => void;
   onStatusChange: (status: TaskStatus) => void;
   onSummaryChange: (summary: string) => void;
   onArtifactChange: (artifact: string) => void;
   onSave: () => void;
+  /** 是否隐藏 header（用于抽屉模式） */
+  hideHeader?: boolean;
 };
 
 export function TaskDetail({
   task,
+  parentTask,
   childTasks,
   artifact,
   artifactLoading,
@@ -97,28 +99,29 @@ export function TaskDetail({
   statusDraft,
   summaryDraft,
   events,
-  contextBundle,
-  simulatedActor,
-  onSimulatedActorChange,
+  onSelectParentTask,
+  onSelectChildTask,
   onClaim,
-  onRelease,
+  onDelete,
   onStatusChange,
   onSummaryChange,
   onArtifactChange,
   onSave,
+  hideHeader = false,
 }: TaskDetailProps) {
-  const readableArtifacts = [...(contextBundle?.inputArtifacts ?? []), ...(contextBundle?.outputArtifacts ?? [])];
 
   return (
     <article className="panel">
       <div className="panel-inner">
-        <div className="panel-header">
-          <div>
-            <h2>{text.title}</h2>
-            <p>{text.description}</p>
+        {!hideHeader && (
+          <div className="panel-header">
+            <div>
+              <h2>{text.title}</h2>
+              <p>{text.description}</p>
+            </div>
+            {task ? <span className={`pill ${task.status}`}>{statusLabels[task.status]}</span> : <span className="pill">{text.idle}</span>}
           </div>
-          {task ? <span className={`pill ${task.status}`}>{statusLabels[task.status]}</span> : <span className="pill">{text.idle}</span>}
-        </div>
+        )}
 
         {!task ? (
           <div className="empty">{text.selectFirst}</div>
@@ -137,16 +140,16 @@ export function TaskDetail({
                 <span>{text.owner}</span>
                 <span>{task.claimedBy || text.unclaimed}</span>
                 <span>{text.lease}</span>
-                <span>{task.leaseExpiresAt ? new Date(task.leaseExpiresAt).toLocaleString() : text.none}</span>
+                <span>{task.leaseExpiresAt ? formatDateTime(task.leaseExpiresAt) : text.none}</span>
                 <span>{text.expiresAt}</span>
-                <span>{new Date(task.expiresAt).toLocaleString()}</span>
+                <span>{formatDateTime(task.expiresAt)}</span>
               </div>
               <div className="actions" style={{ marginTop: 12 }}>
                 <button className="button secondary" type="button" onClick={onClaim} disabled={saving}>
                   {text.claim}
                 </button>
-                <button className="button secondary" type="button" onClick={onRelease} disabled={saving}>
-                  {text.release}
+                <button className="button danger" type="button" onClick={onDelete} disabled={saving}>
+                  {text.deleteTask}
                 </button>
               </div>
             </div>
@@ -170,38 +173,6 @@ export function TaskDetail({
               <div className="row">
                 <label>{text.summary}</label>
                 <textarea className="textarea" value={summaryDraft} onChange={(event) => onSummaryChange(event.target.value)} />
-              </div>
-            </div>
-
-            <div className="detail-card">
-              <p className="section-label">{text.context}</p>
-              <div className="row">
-                <label>{text.actor}</label>
-                <input
-                  className="field"
-                  value={simulatedActor}
-                  onChange={(event) => onSimulatedActorChange(event.target.value)}
-                  placeholder="backend-agent"
-                />
-              </div>
-              <div className="kv-grid">
-                <span>{text.access}</span>
-                <span>{contextBundle ? accessLabels[contextBundle.guidance.access] : text.none}</span>
-                <span>{text.mode}</span>
-                <span>{contextBundle?.guidance.mode ?? "summary_first"}</span>
-                <span>{text.contextSummary}</span>
-                <span>{contextBundle?.guidance.summary || text.noSummary}</span>
-              </div>
-              <div className="context-block">
-                <strong>{text.suggestedRefs}</strong>
-                <div className="ref-list">
-                  {(contextBundle?.guidance.suggestedRefs ?? []).map((ref) => (
-                    <span key={ref} className="ref-chip">
-                      {ref}
-                    </span>
-                  ))}
-                  {(contextBundle?.guidance.suggestedRefs.length ?? 0) === 0 ? <span className="cell-muted">{text.summaryOnly}</span> : null}
-                </div>
               </div>
             </div>
 
@@ -231,56 +202,48 @@ export function TaskDetail({
               </div>
             </div>
 
+            {/* 任务树 - 简化版 */}
             <div className="detail-card">
-              <p className="section-label">{text.children}</p>
-              <div className="event-list">
+              <p className="section-label">任务关系</p>
+              <div className="task-tree-simple">
+                {/* 父任务 */}
+                {parentTask && (
+                  <div className="tree-item parent" onClick={() => onSelectParentTask(parentTask.taskId)}>
+                    <span className="tree-arrow">↑</span>
+                    <span className={`tree-status ${parentTask.status}`}>●</span>
+                    <span className="tree-title">{parentTask.title}</span>
+                    <span className="tree-agent">{parentTask.assignedAgent || '-'}</span>
+                    {parentTask.subagent && <span className="tree-subagent">{parentTask.subagent}</span>}
+                  </div>
+                )}
+                
+                {/* 当前任务 */}
+                <div className="tree-item current">
+                  <span className={`tree-status ${task.status}`}>●</span>
+                  <span className="tree-title">{task.title}</span>
+                  <span className="tree-agent">{task.assignedAgent || '-'}</span>
+                  {task.subagent && <span className="tree-subagent">{task.subagent}</span>}
+                </div>
+
+                {/* 子任务 */}
                 {childTasks.map((childTask) => (
-                  <div key={childTask.taskId} className="event-item">
-                    <div className="meta">
-                      <span className={`pill ${childTask.status}`}>{statusLabels[childTask.status]}</span>
-                      <span>{childTask.assignedAgent || text.unassigned}</span>
-                    </div>
-                    <strong>{childTask.title}</strong>
-                    <span className="cell-muted mono">{childTask.taskId}</span>
+                  <div className="tree-item child" key={childTask.taskId} onClick={() => onSelectChildTask(childTask.taskId)}>
+                    <span className="tree-arrow">↓</span>
+                    <span className={`tree-status ${childTask.status}`}>●</span>
+                    <span className="tree-title">{childTask.title}</span>
+                    <span className="tree-agent">{childTask.assignedAgent || '-'}</span>
+                    {childTask.subagent && <span className="tree-subagent">{childTask.subagent}</span>}
                   </div>
                 ))}
-                {childTasks.length === 0 ? <div className="cell-muted">{text.noChildren}</div> : null}
+                
+                {(!parentTask && childTasks.length === 0) && (
+                  <div className="cell-muted">无父子任务关系</div>
+                )}
               </div>
             </div>
 
-            <div className="detail-card">
-              <p className="section-label">{text.recentEvents}</p>
-              <div className="event-list">
-                {events.slice(0, 8).map((event) => (
-                  <div key={event.eventId} className="event-item">
-                    <div className="meta">
-                      <span className="pill">{event.type}</span>
-                      <span>{event.actor || "system"}</span>
-                    </div>
-                    <strong>{event.message}</strong>
-                    <span className="cell-muted">{new Date(event.createdAt).toLocaleString()}</span>
-                  </div>
-                ))}
-                {events.length === 0 ? <div className="cell-muted">{text.noEvents}</div> : null}
-              </div>
-            </div>
-
-            <div className="detail-card">
-              <p className="section-label">{text.readableArtifacts}</p>
-              <div className="event-list">
-                {readableArtifacts.map((artifactItem) => (
-                  <div key={artifactItem.artifactId} className="event-item">
-                    <div className="meta">
-                      <span className="pill">{artifactItem.type}</span>
-                      <span>{artifactItem.sourceAgent || text.unknownSource}</span>
-                    </div>
-                    <strong>{artifactItem.summary || artifactItem.artifactId}</strong>
-                    <span className="cell-muted mono">{artifactItem.artifactId}</span>
-                  </div>
-                ))}
-                {readableArtifacts.length === 0 ? <div className="cell-muted">{text.noReadableArtifacts}</div> : null}
-              </div>
-            </div>
+            {/* 任务流时间轴 */}
+            <TaskTimeline events={events} />
 
             <div className="detail-card">
               <p className="section-label">{text.payload}</p>

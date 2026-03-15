@@ -1,14 +1,17 @@
 import {
+  agentEventTypes,
   artifactTypes,
+  type AgentEventType,
   type ClaimTaskInput,
+  type CreateAgentEventInput,
   taskEventTypes,
+  type TaskEventType,
   taskStatuses,
   taskVisibilities,
   type ArtifactType,
   type CreateTaskEventInput,
   type CreateTaskInput,
   type SaveArtifactInput,
-  type TaskEventType,
   type TaskStatus,
   type TaskVisibility,
   type UpdateTaskInput,
@@ -58,6 +61,10 @@ export function isTaskEventType(value: unknown): value is TaskEventType {
   return typeof value === "string" && taskEventTypes.includes(value as TaskEventType);
 }
 
+export function isAgentEventType(value: unknown): value is AgentEventType {
+  return typeof value === "string" && agentEventTypes.includes(value as AgentEventType);
+}
+
 export function parseCreateTask(body: unknown): CreateTaskInput {
   if (!body || typeof body !== "object") {
     throw new Error("Invalid request body.");
@@ -78,6 +85,7 @@ export function parseCreateTask(body: unknown): CreateTaskInput {
     summary: parseOptionalString(payload.summary, "summary"),
     parentTaskId: parseOptionalString(payload.parentTaskId, "parentTaskId"),
     assignedAgent: parseOptionalString(payload.assignedAgent, "assignedAgent"),
+    subagent: parseOptionalString(payload.subagent, "subagent"),
     visibility: payload.visibility as TaskVisibility | undefined,
     inputRefs: parseStringArray(payload.inputRefs, "inputRefs"),
     tags: parseStringArray(payload.tags, "tags"),
@@ -192,4 +200,103 @@ export function parseClaimTask(body: unknown): ClaimTaskInput {
     actor,
     leaseSeconds,
   };
+}
+
+export function parseAgentEvent(body: unknown): CreateAgentEventInput {
+  if (!body || typeof body !== "object") {
+    throw new Error("Invalid request body.");
+  }
+
+  const payload = body as Record<string, unknown>;
+  const agentId = parseString(payload.agentId, "agentId");
+  if (!agentId) {
+    throw new Error("agentId is required.");
+  }
+
+  if (!isAgentEventType(payload.type)) {
+    throw new Error("type is invalid. Must be one of: agent_spawned, agent_finished, agent_error, agent_heartbeat, agent_state_changed.");
+  }
+
+  const message = parseString(payload.message, "message");
+  if (!message) {
+    throw new Error("message is required.");
+  }
+
+  return {
+    agentId,
+    type: payload.type,
+    message,
+    metadata: payload.metadata && typeof payload.metadata === "object" ? (payload.metadata as Record<string, unknown>) : undefined,
+  };
+}
+
+export function parseRegisterAgent(body: unknown): { agentId?: string; name: string; parentAgentId?: string; sessionId?: string } {
+  if (!body || typeof body !== "object") {
+    throw new Error("Invalid request body.");
+  }
+
+  const payload = body as Record<string, unknown>;
+  const rawAgentId = payload.agentId !== undefined ? parseString(payload.agentId, "agentId") : undefined;
+  const agentId = rawAgentId && rawAgentId.length > 0 ? rawAgentId : undefined;
+
+  const name = parseString(payload.name, "name");
+  if (!name) {
+    throw new Error("name is required.");
+  }
+
+  return {
+    agentId,
+    name,
+    parentAgentId: parseOptionalString(payload.parentAgentId, "parentAgentId"),
+    sessionId: parseOptionalString(payload.sessionId, "sessionId"),
+  };
+}
+
+export function parseUpdateAgent(body: unknown): { name?: string; parentAgentId?: string; status?: "idle" | "running" | "waiting" | "completed" | "failed"; sessionId?: string; currentTaskId?: string; metadata?: Record<string, unknown> } {
+  if (!body || typeof body !== "object") {
+    throw new Error("Invalid request body.");
+  }
+
+  const payload = body as Record<string, unknown>;
+  const validStatuses = ["idle", "running", "waiting", "completed", "failed"] as const;
+
+  const result: { name?: string; parentAgentId?: string; status?: "idle" | "running" | "waiting" | "completed" | "failed"; sessionId?: string; currentTaskId?: string; metadata?: Record<string, unknown> } = {};
+
+  if (payload.name !== undefined) {
+    const name = parseString(payload.name, "name");
+    if (!name) {
+      throw new Error("name cannot be empty.");
+    }
+    result.name = name;
+  }
+
+  if (payload.parentAgentId !== undefined) {
+    const value = parseOptionalString(payload.parentAgentId, "parentAgentId");
+    result.parentAgentId = value && value.length > 0 ? value : undefined;
+  }
+
+  if (payload.status !== undefined) {
+    const status = payload.status;
+    if (typeof status !== "string" || !validStatuses.includes(status as typeof validStatuses[number])) {
+      throw new Error("status must be one of idle, running, waiting, completed, failed.");
+    }
+    result.status = status as "idle" | "running" | "waiting" | "completed" | "failed";
+  }
+
+  if (payload.sessionId !== undefined) {
+    result.sessionId = parseOptionalString(payload.sessionId, "sessionId");
+  }
+
+  if (payload.currentTaskId !== undefined) {
+    result.currentTaskId = parseOptionalString(payload.currentTaskId, "currentTaskId");
+  }
+
+  if (payload.metadata !== undefined) {
+    if (typeof payload.metadata !== "object") {
+      throw new Error("metadata must be an object.");
+    }
+    result.metadata = payload.metadata as Record<string, unknown>;
+  }
+
+  return result;
 }

@@ -55,3 +55,15 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+
+export async function DELETE(_: Request, { params }: Params) {
+  const { taskId } = await params;
+  const task = await store.getTask(taskId);
+
+  if (!task) {
+    return NextResponse.json({ error: TASK_NOT_FOUND }, { status: 404 });
+  }
+
+  await store.deleteTask(taskId);
+  return NextResponse.json({ success: true });
+}
